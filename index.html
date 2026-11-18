@@ -21,6 +21,7 @@ canvas{width:100%;height:auto;background:#fff;border-radius:10px;touch-action:no
 .it{background:var(--cd);padding:12px 16px;border-radius:10px;margin:8px 0;display:flex;justify-content:space-between;gap:12px}.it span,.mu{color:var(--mu)}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid var(--ln);padding:6px;text-align:left;vertical-align:top}th{width:55%;font-weight:400;color:var(--mu)}
 .doc img{height:90px;background:#fff;border-radius:6px}
+@media screen{.dob{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}.dob select{margin:0}}
 @media print{header,.np{display:none!important}body{background:#fff;color:#000}.ct{background:none}h2,h3{color:#000}th,td{color:#000;border-color:#999}}
 </style></head><body>
 <header><h1>Consentimiento informado</h1><button class=g onclick="go('f')">Formulario</button><button class=g onclick="hist()">Registros</button></header>
@@ -34,8 +35,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const S=[
-['Datos del cliente',[['nombre','Nombre completo'],['edad','Edad','number'],['genero','Género','sel','Femenino,Masculino,Otro'],['ident','Identificación con la que se identifica'],['dom','Domicilio'],['tel','Teléfono / WhatsApp','tel']]],
-['Cita',[['fecha','Fecha','date'],['artista','Tatuador(a)'],['proc','Procedimiento (tatuaje, micropigmentación…)'],['zona','Diseño y zona del cuerpo','area'],['precio','Precio','number'],['dep','Depósito','number'],['mat','Tintas / agujas / lote','area']]],
+['Datos del cliente',[['nombre','Nombre completo'],['nac','Fecha de nacimiento','dob'],['edad','Edad','calc'],['genero','Género','sel','Femenino,Masculino,No binario,Prefiero no especificar'],['ident','Identificación','sel','INE,Pasaporte,Cédula,Cartilla,Otro'],['dom','Domicilio'],['tel','Teléfono / WhatsApp','tel']]],
+['Cita',[['fecha','Fecha','date'],['artista','Tatuador','sel','Quetzal'],['proc','Procedimiento','sel','Tatuaje,Cover up,Black Out,Blast Over'],['zona','Diseño y zona del cuerpo','area']]],
 ['Cuestionario',[
 ['q1','1. ¿Le han practicado algún tatuaje, perforación o micropigmentación?','yn'],
 ['q2','2. ¿Le han realizado algún procedimiento dental (endodoncia)?','yn'],
@@ -53,14 +54,20 @@ const S=[
 let db,unl=0;
 const dbo=()=>new Promise((res,rej)=>{const r=indexedDB.open('estudio',1);r.onupgradeneeded=()=>r.result.createObjectStore('r',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=rej});
 const tx=(m,f)=>new Promise((res,rej)=>{const t=db.transaction('r',m),q=f(t.objectStore('r'));t.oncomplete=()=>res(q.result);t.onerror=rej});
+const M='enero,febrero,marzo,abril,mayo,junio,julio,agosto,septiembre,octubre,noviembre,diciembre'.split(',');
 const inp=([n,l,t,o])=>{
+if(t=='dob'){const y=new Date().getFullYear();return `<fieldset><legend>${l}</legend><div class=dob><select name=nac_d><option value="">Día</option>${Array.from({length:31},(_,i)=>`<option>${i+1}</option>`).join('')}</select><select name=nac_m><option value="">Mes</option>${M.map((x,i)=>`<option value=${i+1}>${x}</option>`).join('')}</select><select name=nac_a><option value="">Año</option>${Array.from({length:100},(_,i)=>`<option>${y-i}</option>`).join('')}</select></div></fieldset>`}
+if(t=='calc')return `<p class=mu>${l}: <b id=ed>—</b></p>`;
 if(t=='yn')return `<fieldset><legend>${l}</legend><label class=o><input type=radio name=${n} value="Sí">Sí</label><label class=o><input type=radio name=${n} value="No">No</label></fieldset>`;
 if(t=='chk')return `<fieldset><legend>${l}</legend>${o.split(',').map(x=>`<label class=o><input type=checkbox name=${n} value="${x}">${x}</label>`).join('')}</fieldset>`;
 if(t=='sel')return `<label>${l}<select name=${n}><option value="">—</option>${o.split(',').map(x=>`<option>${x}</option>`).join('')}</select></label>`;
 if(t=='area')return `<label>${l}<textarea name=${n} rows=2></textarea></label>`;
 return `<label>${l}<input name=${n} type=${t||'text'}></label>`};
 const F=$('#fm');
-const col=()=>{const fd=new FormData(F),d={};S.forEach(([,fs])=>fs.forEach(([n,,t])=>d[n]=t=='chk'?fd.getAll(n).join(', '):fd.get(n)||''));return d};
+const col=()=>{const fd=new FormData(F),d={};S.forEach(([,fs])=>fs.forEach(([n,,t])=>d[n]=t=='chk'?fd.getAll(n).join(', '):fd.get(n)||''));
+const dd=+fd.get('nac_d'),m=+fd.get('nac_m'),y=+fd.get('nac_a');d.nac=d.edad='';
+if(dd&&m&&y&&new Date(y,m-1,dd).getMonth()==m-1){const t=new Date();let e=t.getFullYear()-y;if(t.getMonth()+1<m||(t.getMonth()+1==m&&t.getDate()<dd))e--;d.nac=`${String(dd).padStart(2,'0')}/${String(m).padStart(2,'0')}/${y}`;d.edad=String(e)}
+return d};
 const B=v=>`<b>${v?E(v):'__________'}</b>`;
 const C=d=>`<p>Guadalajara, Jalisco, a ${B(d.fecha)}</p><p>Yo ${B(d.nombre)} que me identifico con ${B(d.ident)} y con domicilio en ${B(d.dom)}.</p><p>Declaro que me ha sido explicado ampliamente por el C. ${B(d.artista)} sobre los riesgos de cicatrización, infección, inflamación, intolerancia, sangrado, presencia de secreciones, complicaciones, medidas de aseo, limpieza y cuidados a seguir en caso de que el procedimiento de ${B(d.proc)} me ocasione alguna manifestación de intolerancia, inflamación, infección que requiera de cambiar, tratar o eliminar, así como las medidas a seguir en caso de infección.</p><p>Asimismo y para el caso de los procedimientos de micropigmentación o tatuaje estoy consciente de que los mismos son irreversibles, y en caso de disminuir la percepción de éstos deberá ser mediante prácticas médicas realizadas por profesionales especializados.</p><p>Sin perjuicio de los procedimientos que se realizarán declaro tener plena capacidad, conciencia y lucidez, para decidir y aceptar el procedimiento de ${B(d.proc)} bajo mi completa responsabilidad.</p>`;
 const T=r=>S.map(([t,fs])=>`<h3>${t}</h3><table>${fs.map(([n,l])=>`<tr><th>${l}</th><td>${E(r[n]||'—')}</td></tr>`).join('')}</table>`).join('');
@@ -71,13 +78,15 @@ const p=e=>{const b=c.getBoundingClientRect();return[(e.clientX-b.left)*c.width/
 c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));c.d=1};
 c.onpointermove=e=>{if(c.d){x.lineTo(...p(e));x.stroke();c.touched=1}};
 c.onpointerup=c.onpointercancel=()=>c.d=0}
-const reset=()=>{F.reset();$$('canvas').forEach(clr);F.elements.fecha.value=new Date().toLocaleDateString('en-CA');$('#ct').innerHTML=C(col())};
-function render(){F.innerHTML=S.map(([t,fs])=>`<h2>${t}</h2>${fs.map(f=>inp(f)).join('')}`).join('')+`<h2>Carta de consentimiento informado</h2><div id=ct class=ct></div><h2>Firma del cliente</h2><canvas id=c1 width=900 height=300></canvas><button type=button class=g onclick="clr($('#c1'))">Borrar firma</button><h2>Firma del tatuador(a)</h2><canvas id=c2 width=900 height=300></canvas><button type=button class=g onclick="clr($('#c2'))">Borrar firma</button><button class=big>Guardar y enviar</button>`;
-F.onsubmit=guardar;F.oninput=()=>$('#ct').innerHTML=C(col());$$('canvas').forEach(pad);reset()}
-async function guardar(e){e.preventDefault();const d=col(),a=$('#c1'),b=$('#c2');
+const upd=()=>{const d=col();$('#ct').innerHTML=C(d);$('#ed').textContent=d.edad?d.edad+' años':'—'};
+const reset=()=>{F.reset();$$('canvas').forEach(clr);F.elements.fecha.value=new Date().toLocaleDateString('en-CA');upd()};
+function render(){F.innerHTML=S.map(([t,fs])=>`<h2>${t}</h2>${fs.map(f=>inp(f)).join('')}`).join('')+`<h2>Carta de consentimiento informado</h2><div id=ct class=ct></div><h2>Firma del cliente</h2><canvas id=c1 width=900 height=300></canvas><button type=button class=g onclick="clr($('#c1'))">Borrar firma</button><button class=big>Guardar y enviar</button>`;
+F.onsubmit=guardar;F.oninput=upd;$$('canvas').forEach(pad);reset()}
+async function guardar(e){e.preventDefault();const d=col(),a=$('#c1');
 if(!d.nombre.trim())return alert('Falta el nombre');
+if(!d.nac)return alert('Falta la fecha de nacimiento (día, mes y año válidos)');
 if(!a.touched)return alert('Falta la firma del cliente');
-d.sigC=a.toDataURL('image/png');d.sigA=b.touched?b.toDataURL('image/png'):'';d.creado=Date.now();
+d.sigC=a.toDataURL('image/png');d.creado=Date.now();
 await tx('readwrite',s=>s.add(d));go('gr');scrollTo(0,0)}
 const nuevo=()=>{reset();go('f');scrollTo(0,0)};
 const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
