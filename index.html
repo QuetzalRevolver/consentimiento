@@ -1,0 +1,98 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#15151a">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png">
+<title>Consentimientos</title>
+<style>
+:root{--bg:#15151a;--cd:#1f1f27;--tx:#f2efe9;--mu:#9a98a3;--ac:#e0b84c;--ln:#34343f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.5 system-ui,sans-serif}
+header{display:flex;gap:8px;align-items:center;padding:12px 16px;position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--ln);z-index:5}
+h1{font-size:18px;margin:0;flex:1}h2{color:var(--ac);font-size:19px;margin:28px 0 8px}
+main{max-width:760px;margin:auto;padding:8px 16px 60px}
+section{display:none}section.on{display:block}
+label{display:block;margin:12px 0;color:var(--mu);font-size:14px}
+input,textarea,select{width:100%;margin-top:4px;padding:12px;background:var(--cd);color:var(--tx);border:1px solid var(--ln);border-radius:10px;font:inherit}
+fieldset{border:1px solid var(--ln);border-radius:10px;margin:12px 0;padding:8px 12px}legend{padding:0 6px}
+.o{display:inline-flex;align-items:center;gap:8px;margin:4px 14px 4px 0;color:var(--tx);font-size:16px}.o input{width:24px;height:24px;margin:0}
+button,.b{background:var(--ac);color:#111;border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer;display:inline-block}
+.g{background:var(--cd);color:var(--tx);border:1px solid var(--ln)}.big{width:100%;margin-top:24px;padding:16px}
+.ct{background:var(--cd);border-radius:10px;padding:4px 16px;font-size:15px}
+canvas{width:100%;height:auto;background:#fff;border-radius:10px;touch-action:none;display:block;margin-bottom:8px}
+.it{background:var(--cd);padding:12px 16px;border-radius:10px;margin:8px 0;display:flex;justify-content:space-between;gap:12px}.it span,.mu{color:var(--mu)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid var(--ln);padding:6px;text-align:left;vertical-align:top}th{width:55%;font-weight:400;color:var(--mu)}
+.doc img{height:90px;background:#fff;border-radius:6px}
+@media print{header,.np{display:none!important}body{background:#fff;color:#000}.ct{background:none}h2,h3{color:#000}th,td{color:#000;border-color:#999}}
+</style></head><body>
+<header><h1>Consentimiento informado</h1><button class=g onclick="go('f')">Formulario</button><button class=g onclick="hist()">Registros</button></header>
+<main>
+<section id=f class=on><form id=fm></form></section>
+<section id=gr><h2>¡Gracias!</h2><p>Tu registro quedó guardado.</p><button onclick="nuevo()">Nuevo cliente</button></section>
+<section id=h><label>Buscar<input id=q placeholder="Nombre, fecha o procedimiento" oninput="lista()"></label><div id=l></div><p><button class=g onclick="exp()">Exportar respaldo</button> <label class="b g" style="margin:0;color:var(--tx);font-size:16px">Importar respaldo<input type=file accept=.json hidden onchange="imp(this)"></label></p></section>
+<section id=v></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S=[
+['Datos del cliente',[['nombre','Nombre completo'],['edad','Edad','number'],['genero','Género','sel','Femenino,Masculino,Otro'],['ident','Identificación con la que se identifica'],['dom','Domicilio'],['tel','Teléfono / WhatsApp','tel']]],
+['Cita',[['fecha','Fecha','date'],['artista','Tatuador(a)'],['proc','Procedimiento (tatuaje, micropigmentación…)'],['zona','Diseño y zona del cuerpo','area'],['precio','Precio','number'],['dep','Depósito','number'],['mat','Tintas / agujas / lote','area']]],
+['Cuestionario',[
+['q1','1. ¿Le han practicado algún tatuaje, perforación o micropigmentación?','yn'],
+['q2','2. ¿Le han realizado algún procedimiento dental (endodoncia)?','yn'],
+['q3','3. ¿Transfusión sanguínea en los últimos seis meses?','yn'],
+['q4','4. Antecedentes de enfermedades','chk','Diabetes,Cicatriz queloide,Cáncer,Hipertensión,Epilepsia,Hemofilia'],
+['q5','5. Enfermedades transmisibles','chk','Hepatitis,VIH,Gonorrea,Sífilis,Chancro'],
+['q6','6. Alergia a','chk','Sustancias,Alimentos,Medicamentos,Anestésicos,Otros'],
+['q6b','Especifique las alergias'],
+['q7','7. ¿Toma algún medicamento?','yn'],['q7b','¿Cuál?'],
+['q8','8. ¿Consume alguna droga?','yn'],
+['q9','9. Intervención quirúrgica en los últimos seis meses'],
+['q10','10. Alimentos en las últimas 4 horas'],
+['q11','11. Bebidas alcohólicas en las últimas 8 horas'],
+['q12','12. ¿Está embarazada o en periodo de lactancia?']]]];
+let db,unl=0;
+const dbo=()=>new Promise((res,rej)=>{const r=indexedDB.open('estudio',1);r.onupgradeneeded=()=>r.result.createObjectStore('r',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=rej});
+const tx=(m,f)=>new Promise((res,rej)=>{const t=db.transaction('r',m),q=f(t.objectStore('r'));t.oncomplete=()=>res(q.result);t.onerror=rej});
+const inp=([n,l,t,o])=>{
+if(t=='yn')return `<fieldset><legend>${l}</legend><label class=o><input type=radio name=${n} value="Sí">Sí</label><label class=o><input type=radio name=${n} value="No">No</label></fieldset>`;
+if(t=='chk')return `<fieldset><legend>${l}</legend>${o.split(',').map(x=>`<label class=o><input type=checkbox name=${n} value="${x}">${x}</label>`).join('')}</fieldset>`;
+if(t=='sel')return `<label>${l}<select name=${n}><option value="">—</option>${o.split(',').map(x=>`<option>${x}</option>`).join('')}</select></label>`;
+if(t=='area')return `<label>${l}<textarea name=${n} rows=2></textarea></label>`;
+return `<label>${l}<input name=${n} type=${t||'text'}></label>`};
+const F=$('#fm');
+const col=()=>{const fd=new FormData(F),d={};S.forEach(([,fs])=>fs.forEach(([n,,t])=>d[n]=t=='chk'?fd.getAll(n).join(', '):fd.get(n)||''));return d};
+const B=v=>`<b>${v?E(v):'__________'}</b>`;
+const C=d=>`<p>Guadalajara, Jalisco, a ${B(d.fecha)}</p><p>Yo ${B(d.nombre)} que me identifico con ${B(d.ident)} y con domicilio en ${B(d.dom)}.</p><p>Declaro que me ha sido explicado ampliamente por el C. ${B(d.artista)} sobre los riesgos de cicatrización, infección, inflamación, intolerancia, sangrado, presencia de secreciones, complicaciones, medidas de aseo, limpieza y cuidados a seguir en caso de que el procedimiento de ${B(d.proc)} me ocasione alguna manifestación de intolerancia, inflamación, infección que requiera de cambiar, tratar o eliminar, así como las medidas a seguir en caso de infección.</p><p>Asimismo y para el caso de los procedimientos de micropigmentación o tatuaje estoy consciente de que los mismos son irreversibles, y en caso de disminuir la percepción de éstos deberá ser mediante prácticas médicas realizadas por profesionales especializados.</p><p>Sin perjuicio de los procedimientos que se realizarán declaro tener plena capacidad, conciencia y lucidez, para decidir y aceptar el procedimiento de ${B(d.proc)} bajo mi completa responsabilidad.</p>`;
+const T=r=>S.map(([t,fs])=>`<h3>${t}</h3><table>${fs.map(([n,l])=>`<tr><th>${l}</th><td>${E(r[n]||'—')}</td></tr>`).join('')}</table>`).join('');
+const go=v=>$$('main>section').forEach(s=>s.classList.toggle('on',s.id==v));
+const clr=c=>{const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);c.touched=0};
+function pad(c){const x=c.getContext('2d');x.lineWidth=3;x.lineCap='round';x.strokeStyle='#111';
+const p=e=>{const b=c.getBoundingClientRect();return[(e.clientX-b.left)*c.width/b.width,(e.clientY-b.top)*c.height/b.height]};
+c.onpointerdown=e=>{c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));c.d=1};
+c.onpointermove=e=>{if(c.d){x.lineTo(...p(e));x.stroke();c.touched=1}};
+c.onpointerup=c.onpointercancel=()=>c.d=0}
+const reset=()=>{F.reset();$$('canvas').forEach(clr);F.elements.fecha.value=new Date().toLocaleDateString('en-CA');$('#ct').innerHTML=C(col())};
+function render(){F.innerHTML=S.map(([t,fs])=>`<h2>${t}</h2>${fs.map(f=>inp(f)).join('')}`).join('')+`<h2>Carta de consentimiento informado</h2><div id=ct class=ct></div><h2>Firma del cliente</h2><canvas id=c1 width=900 height=300></canvas><button type=button class=g onclick="clr($('#c1'))">Borrar firma</button><h2>Firma del tatuador(a)</h2><canvas id=c2 width=900 height=300></canvas><button type=button class=g onclick="clr($('#c2'))">Borrar firma</button><button class=big>Guardar y enviar</button>`;
+F.onsubmit=guardar;F.oninput=()=>$('#ct').innerHTML=C(col());$$('canvas').forEach(pad);reset()}
+async function guardar(e){e.preventDefault();const d=col(),a=$('#c1'),b=$('#c2');
+if(!d.nombre.trim())return alert('Falta el nombre');
+if(!a.touched)return alert('Falta la firma del cliente');
+d.sigC=a.toDataURL('image/png');d.sigA=b.touched?b.toDataURL('image/png'):'';d.creado=Date.now();
+await tx('readwrite',s=>s.add(d));go('gr');scrollTo(0,0)}
+const nuevo=()=>{reset();go('f');scrollTo(0,0)};
+const sha=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+async function auth(){if(unl)return 1;const h=localStorage.getItem('pin');
+if(!h){const p=prompt('Crea un PIN para entrar a los registros');if(!p)return 0;localStorage.setItem('pin',await sha(p));return unl=1}
+const p=prompt('PIN');if(p&&await sha(p)==h)return unl=1;alert('PIN incorrecto');return 0}
+async function hist(){if(!await auth())return;go('h');lista()}
+async function lista(){const a=(await tx('readonly',s=>s.getAll())).reverse(),k=$('#q').value.toLowerCase();
+$('#l').innerHTML=a.filter(r=>(r.nombre+r.fecha+r.proc).toLowerCase().includes(k)).map(r=>`<div class=it onclick="abre(${r.id})"><b>${E(r.nombre)}</b><span>${E(r.fecha)} · ${E(r.proc)}</span></div>`).join('')||'<p class=mu>Sin registros</p>'}
+async function abre(id){ver(await tx('readonly',s=>s.get(id)))}
+function ver(r){$('#v').innerHTML=`<p class=np><button onclick="print()">Imprimir / guardar PDF</button> <button class=g onclick="hist()">Volver</button> <button class=g onclick="del(${r.id})">Eliminar</button></p><div class=doc><h2>Carta de consentimiento informado</h2><div class=ct>${C(r)}</div>${T(r)}<h3>Firma del cliente</h3><img src="${r.sigC}">${r.sigA?`<h3>Firma del tatuador(a)</h3><img src="${r.sigA}">`:''}</div>`;go('v')}
+async function del(id){if(confirm('¿Eliminar este registro?')){await tx('readwrite',s=>s.delete(id));hist()}}
+async function exp(){const a=await tx('readonly',s=>s.getAll()),l=document.createElement('a');l.href=URL.createObjectURL(new Blob([JSON.stringify(a)],{type:'application/json'}));l.download='respaldo-'+new Date().toLocaleDateString('en-CA')+'.json';l.click()}
+async function imp(i){const a=JSON.parse(await i.files[0].text()),ex=new Set((await tx('readonly',s=>s.getAll())).map(r=>r.creado));let n=0;
+for(const r of a)if(!ex.has(r.creado)){delete r.id;await tx('readwrite',s=>s.add(r));n++}
+alert(n+' registros importados');lista()}
+(async()=>{db=await dbo();render();navigator.storage?.persist?.();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js')})();
+</script></body></html>
