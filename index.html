@@ -21,9 +21,10 @@ canvas{width:100%;height:auto;background:#fff;border-radius:10px;touch-action:no
 .it{background:var(--cd);padding:12px 16px;border-radius:10px;margin:8px 0;display:flex;justify-content:space-between;gap:12px}.it span,.mu{color:var(--mu)}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid var(--ln);padding:6px;text-align:left;vertical-align:top}th{width:55%;font-weight:400;color:var(--mu)}
 .doc img{height:90px;background:#fff;border-radius:6px}
-@media screen{.dob{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}.dob select{margin:0}}
-@media print{header,.np{display:none!important}body{background:#fff;color:#000}.ct{background:none}h2,h3{color:#000}th,td{color:#000;border-color:#999}}
+@media screen{.ban{display:block;width:100%;max-width:760px;margin:0 auto;height:auto}.dob{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:8px}.dob select{margin:0}}
+@media print{.ban{display:block;width:100%;height:auto}header,.np{display:none!important}body{background:#fff;color:#000}.ct{background:none}h2,h3{color:#000}th,td{color:#000;border-color:#999}}
 </style></head><body>
+<img class=ban src="header.webp" alt="Quetzal Revolver Tattoo">
 <header><h1>Consentimiento informado</h1><button class=g onclick="go('f')">Formulario</button><button class=g onclick="hist()">Registros</button></header>
 <main>
 <section id=f class=on><form id=fm></form></section>
